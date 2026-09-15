@@ -1,0 +1,22 @@
+/* ============================================================================
+   Lo mínimo que la página necesita para no pelearse con los tokens.
+   ----------------------------------------------------------------------------
+   Aquí NO se decide nada de identidad: eso vive en tokens.css. Esto solo pone
+   el lienzo y quita los márgenes que trae el navegador.
+   ========================================================================= */
+* { box-sizing: border-box; }
+
+html, body, #raiz { height: 100%; }
+
+body {
+  margin: 0;
+  /* Las dos salen de tokens.css. Si esta regla se queda sin ellas, la página
+     sale blanca sobre blanco: es la señal de que los tokens no cargaron. */
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--fuente);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Las cifras no bailan al actualizarse en vivo. Regla de la casa. */
+.cifras { font-variant-numeric: tabular-nums; }

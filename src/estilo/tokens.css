@@ -1,0 +1,407 @@
+/* ============================================================================
+   PROCEDENCIA · este archivo viene de RenaserOs/src/ui/tokens.css
+   ----------------------------------------------------------------------------
+   Es la identidad de RENASER OS, «Tinta sobre neutro» (Entrega 1). Se copia
+   entera y sin retocar: lo que sigue es el original, con sus motivos escritos.
+
+   ⚠️ SON DOS COPIAS DE LA MISMA VERDAD, Y ESO TIENE UN COSTE
+   ----------------------------------------------------------
+   Mientras el panel anterior siga vivo, un cambio de identidad hay que hacerlo
+   en los dos sitios o discreparán. El día que se retire aquel, esta pasa a ser
+   la única. Queda escrito para que la divergencia se vea venir en vez de
+   descubrirse en una captura de pantalla.
+
+   Copiado el 15 de septiembre de 2026.
+   ========================================================================= */
+
+/* ============================================================
+   RENASER OS · Tokens · Entrega 1 «Tinta sobre neutro»
+   ------------------------------------------------------------
+   Sistema estrictamente monocromático: la jerarquía se resuelve
+   con el bloque invertido, el peso tipográfico y el contraste,
+   nunca con un color corporativo. El semáforo es el único color
+   permitido y solo aparece cuando informa (chips, puntos, cifras).
+
+   Cómo se carga
+   -------------
+   Este archivo se importa DESPUÉS de src/index.css (ver main.jsx),
+   así que sus valores ganan por orden de cascada. index.css queda
+   intacto con la paleta de marca anterior: quitar la línea de
+   import en main.jsx devuelve la app al verde/oro sin tocar nada
+   más.
+
+   Los selectores usan :root:not(.dark) / :root.dark (0,2,0) para
+   ganarle siempre al .dark (0,1,0) que ya vive en index.css, sin
+   depender del orden de las reglas.
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   0 · La regla del primario
+   ------------------------------------------------------------
+   Una sola Boton variante="primario" POR ESTADO VISIBLE de la vista.
+   El primario señala la acción que firma el trabajo, no un estado:
+
+   · La pestaña activa no es una acción. Se marca con SubPestanas
+     (subrayado y peso), nunca con variante="primario". Un botón
+     negro que no hace nada al pulsarlo de nuevo es un letrero
+     disfrazado de acción.
+
+   · Estados excluyentes cuentan por separado. Si dos primarios nunca
+     se pintan en el mismo render (fases de una máquina de estados,
+     pestañas, modo con/sin selección), cada estado puede tener el
+     suyo. La prueba es mecánica: en ningún render del DOM hay dos
+     .rnsr-btn--primario visibles a la vez.
+
+   · Cero primarios también infringe, salvo en superficies de pura
+     consulta (se lee, no se escribe), donde se declara en el
+     comentario de la vista. Toda superficie que ejecuta algo tiene
+     una acción que firma: encuéntrala y declárala.
+
+   · Dentro de un bloque invertido, variante="invertido" hace de
+     primario y cuenta igual para esta regla.
+
+   · Un modal abierto es su propio estado visible. Su botón de
+     confirmar ES la acción que firma —para eso se abrió— y la vista
+     que hay detrás está inerte: no se puede pulsar nada de ella. La
+     comprobación mecánica se hace sobre la vista o sobre el modal,
+     nunca sumando los dos. Sin esta cláusula la regla se incumpliría
+     en las diecisiete vistas a la vez, cada vez que alguien abre un
+     modal, y una regla que siempre falla no se comprueba: se ignora.
+
+   Corolario de implementación: la píldora activa de NavAgrupada se
+   pinta invertida pero NO lleva .rnsr-btn--primario, justamente para
+   que la comprobación mecánica siga midiendo acciones y no sitios.
+   ------------------------------------------------------------ */
+
+/* ------------------------------------------------------------
+   1 · Paleta — modo claro
+   ------------------------------------------------------------ */
+:root:not(.dark) {
+  color-scheme: light;
+
+  /* Superficies */
+  --color-bg: #F5F5F3;              /* fondo general, neutro cálido */
+  --color-surface: #FFFFFF;         /* tarjetas y superficies base */
+  --color-surface-2: #FAFAF9;       /* fondos internos, filas al pasar */
+  --color-surface-3: #F0F0EE;       /* rellenos suaves, chips neutros, skeleton */
+
+  /* Líneas */
+  --color-line: #E3E3DF;            /* borde estándar, divisores */
+  --color-line-2: #D2D2CD;          /* borde de controles interactivos */
+
+  /* Tinta */
+  --color-ink: #0D0D0D;             /* tinta principal */
+  /* Los dos grises se miden sobre --color-surface-3 (#F0F0EE), que es el
+     fondo más claro donde caen: chips neutros, rellenos suaves, skeleton.
+     Medidos sobre blanco daban 4,98 y 5,05 y parecían holgados; sobre el
+     chip neutro se quedaban en 4,36 y 4,43, por debajo del mínimo AA de
+     4,5. Se oscurecieron hasta que el PEOR fondo cumple. */
+  --color-ink-2: #6A6A65;           /* bajadas, metadatos · 4,76:1 sobre surface-3 */
+  --color-ink-3: #696964;           /* micro-etiquetas 10–11px · 4,84:1 sobre surface-3
+                                       (referencia del sistema: #9A9A94) */
+
+  /* Bloque invertido — lo más importante de cada vista */
+  --color-inv: #0E0E0E;
+  --color-inv-ink: #FAFAF8;
+  --color-inv-line: rgba(250, 250, 248, 0.14);
+  --color-inv-hover: #232322;       /* hover sobre superficie invertida */
+  --color-inv-hover-2: #2E2E2C;
+
+  /* Semáforo · único color permitido */
+  --color-ok: #2F6E51;
+  --color-ok-txt: #2F6E51;
+  --color-ok-bg: #E9F0EB;
+  --color-warn: #9B6A22;            /* hex oficial: puntos y cifras grandes */
+  --color-warn-txt: #7C5418;        /* variante oscura para texto pequeño (AA 4.5:1) */
+  --color-warn-bg: #F4EDE0;
+  --color-crit: #A43B36;
+  --color-crit-txt: #A43B36;
+  --color-crit-bg: #F5E8E6;
+  --color-info: #4D5967;
+  --color-info-txt: #4D5967;
+  --color-info-bg: #E9ECEF;
+
+  /* Efectos */
+  --color-shadow: 0 1px 2px rgba(13, 13, 13, 0.04);
+  --color-scrim: rgba(13, 13, 13, 0.38);
+}
+
+/* ------------------------------------------------------------
+   2 · Paleta — modo oscuro (mismos nombres, otros valores)
+   ------------------------------------------------------------ */
+:root.dark {
+  color-scheme: dark;
+
+  --color-bg: #08090B;
+  --color-surface: #0D1016;
+  --color-surface-2: #080A0D;
+  --color-surface-3: #12161F;
+
+  --color-line: rgba(255, 255, 255, 0.08);
+  --color-line-2: rgba(255, 255, 255, 0.14);
+
+  --color-ink: #F8FAFC;
+  --color-ink-2: #94A3B8;
+  /* ⚠️ Era #64748B y daba 4,0:1 sobre `--color-surface` y 3,8:1 sobre
+     `--color-surface-3`, por debajo del 4,5 que pide AA para texto normal. Y
+     este token viste las micro-etiquetas de 10-11 px, que es justo donde un
+     contraste flojo se nota mas.
+     #7C8AA0 sube a 5,44 y 5,17 — medido, no estimado. Se descarta #748196,
+     que tambien pasa (4,83 y 4,59) pero se queda a 0,09 de la linea: el
+     proximo retoque de una superficie lo volveria a romper.
+     Y sigue siendo claramente mas apagado que `--color-ink-2` (#94A3B8, 7,43),
+     que es lo que separa una micro-etiqueta de una bajada. */
+  --color-ink-3: #7C8AA0;
+
+  --color-inv: #C5A059;
+  --color-inv-ink: #090A0D;
+  /* ⚠️ CUELGA DE `--color-inv`, NO DE `--color-oro`, Y NO ES UN DESCUIDO.
+     Era `rgba(197, 160, 89, 0.3)` — el oro clavado a mano — y al pasarlo a
+     color-mix habia que elegir de quien cuelga. Este token es la linea del
+     BLOQUE INVERTIDO, no el acento de la app: `Boton` lo usa en
+     `secundarioInvertido` y `Tarjeta` en `invertida`, siempre sobre un fondo
+     `--color-inv`. Colgarlo de `--color-oro` lo haria seguir al selector de
+     temas, y en Esmeralda dejaria un borde VERDE sobre un fondo DORADO, porque
+     `--color-inv` no lo inyecta `temas.js` y se queda en #C5A059.
+     Asi el borde sigue a la superficie que bordea, que es lo que hace la
+     version clara de este mismo token: alli es `--color-inv-ink` al 14 % sobre
+     un `--color-inv` casi negro.
+
+     Queda dicho aparte: que TODA la familia `--color-inv*` siga dorada en los
+     seis temas es un hueco real —el boton primario y las burbujas del chat no
+     cambian de color—, pero es del sistema de diseno y se arregla decidiendo si
+     el bloque invertido lleva acento propio, no metiendole el acento por la
+     puerta de atras a una linea. */
+  --color-inv-line: color-mix(in srgb, var(--color-inv, #C5A059) 30%, transparent);
+  --color-inv-hover: #D4AF37;
+  --color-inv-hover-2: #E5C365;
+
+  --color-ok: #10B981;
+  --color-ok-txt: #10B981;
+  --color-ok-bg: rgba(16, 185, 129, 0.15);
+  --color-warn: #F59E0B;
+  --color-warn-txt: #F59E0B;
+  --color-warn-bg: rgba(245, 158, 11, 0.15);
+  --color-crit: #EF4444;
+  --color-crit-txt: #EF4444;
+  --color-crit-bg: rgba(239, 68, 68, 0.15);
+  --color-info: #38BDF8;
+  --color-info-txt: #38BDF8;
+  --color-info-bg: rgba(56, 189, 248, 0.15);
+
+  --color-shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
+  --color-scrim: rgba(0, 0, 0, 0.75);
+}
+
+/* ------------------------------------------------------------
+   3 · Geometría, movimiento y área táctil (iguales en ambos temas)
+   ------------------------------------------------------------
+   Todo lo de este bloque vale igual en claro y en oscuro, así que
+   se declara UNA vez en :root y las dos paletas lo heredan con el
+   mismo valor. Duplicarlo en los dos bloques de arriba no añadiría
+   paridad —ya la hay— y abriría la puerta a que un día divergieran
+   por descuido.
+   ------------------------------------------------------------ */
+:root {
+  /* Radios: 18 tarjetas · 12 controles · 10 controles pequeños · 999 píldoras */
+  --radio-tarjeta: 18px;
+  --radio-control: 12px;
+  --radio-chico: 10px;
+  --radio-pildora: 999px;
+
+  /* Movimiento */
+  --mov-curva: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --mov-rapido: 0.18s;
+  --mov-medio: 0.24s;
+
+  /* Escala de espaciado.
+     La auditoría del módulo de Selección contó 466 literales de
+     espaciado repartidos en doce valores distintos: 2, 4, 6, 8, 10,
+     12, 14, 16, 18, 20, 22 y 26. Doce valores no son un sistema,
+     son doce decisiones tomadas de una en una.
+
+     Los dos empates aritméticos (6 y 20) se resuelven hacia arriba
+     a propósito. 4px no separa nada al tacto: con áreas táctiles de
+     44, dos píldoras a 4px quedan bajo el mismo dedo. Y los paddings
+     de tarjeta de 20–22 comprimidos a 16 densificarían justo las
+     vistas que ya se aprietan. Hacia el aire, no hacia la aritmética.
+
+       2 · 4        → --esp-1
+       6 · 8 · 10   → --esp-2
+       12 · 14      → --esp-3
+       16 · 18      → --esp-4
+       20 · 22 · 26 → --esp-5
+
+     No son espaciado y no se convierten: los 2px de subrayados y
+     marcas (son trazo, no hueco) y las medidas de retícula (anchos
+     de columna, los 80/96 de la rejilla de calificación).
+
+     --esp-6 y --esp-7 no tienen origen en la tabla: quedan para las
+     separaciones de sección que hoy no existen porque las vistas se
+     apretaban. */
+  --esp-1: 4px;
+  --esp-2: 8px;
+  --esp-3: 12px;
+  --esp-4: 16px;
+  --esp-5: 24px;
+  --esp-6: 32px;
+  --esp-7: 48px;
+
+  /* Área táctil: todo objetivo mide ≥44px */
+  --alto-control: 44px;
+  --alto-control-sm: 36px;
+  --alto-chip: 26px;
+  --alto-chip-sm: 24px;
+
+  /* Densidad de fila. Dos alturas, no nueve: la auditoría encontró
+     nueve anchos de columna maestra (250–420px) que no coincidían
+     por diseño sino por copiar y ajustar.
+       52px · fila de dos líneas (nombre + chip): maestro-detalle,
+              calificación, versiones. Es el 52 que Criba encontró sola.
+       40px · fila de una línea: bandeja, puestos, auditoría, tablas. */
+  --alto-fila: 52px;
+  --alto-fila-compacta: 40px;
+
+  /* Sombras: la sombra es mínima y nunca jerarquiza; el borde hace el trabajo */
+  --sombra-flotante: 0 6px 20px rgba(13, 13, 13, 0.06);
+  --sombra-modal: 0 24px 60px rgba(0, 0, 0, 0.18);
+
+  /* Tipografía */
+  --fuente: "Geist", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+  --fuente-mono: "Geist Mono", ui-monospace, Menlo, Monaco, "Cascadia Mono", monospace;
+}
+
+:root.dark {
+  --sombra-flotante: 0 6px 20px rgba(0, 0, 0, 0.45);
+  --sombra-modal: 0 24px 60px rgba(0, 0, 0, 0.6);
+}
+
+/* ------------------------------------------------------------
+   4 · Puente con el contrato anterior de index.css
+   ------------------------------------------------------------
+   Los nombres --color-* que ya usa src/theme.js (y con él todas
+   las pantallas actuales) se conservan tal cual y solo cambian de
+   valor. Ninguna pantalla se toca; la piel cambia sola.
+   ------------------------------------------------------------ */
+:root:not(.dark),
+:root.dark {
+  /* Marca → tinta y bloque invertido (el verde y el oro salen del sistema) */
+  --color-verde: var(--color-ink);
+  --color-verde-texto: var(--color-ink);
+  --color-verde-fondo: var(--color-inv);
+  --color-verde2: var(--color-inv-hover);
+  --color-verde3: var(--color-inv-hover-2);
+  --color-verdeSuave: var(--color-surface-2);
+  /* ⚠️ SI HAS LLEGADO AQUI PORQUE EL ORO SE VE GRIS, EL FALLO NO ESTA AQUI.
+     Este mapeo es deliberado: es el puente que traduce los nombres viejos de
+     marca al sistema neutro, y sin acento propio el equivalente honesto de un
+     dorado apagado es una tinta secundaria.
+
+     En la app NUNCA se ve, porque `temas.js` inyecta el acento del tema elegido
+     como estilo EN LINEA sobre `documentElement`, y eso gana a cualquier hoja.
+     Los seis temas definen los tres tokens del oro.
+
+     Si en alguna pantalla sale gris, lo que falta es `ThemeProvider`, no otro
+     valor aqui. Paso el 1 sep 2026 en `shell.html`, que no lo montaba. */
+  --color-oro: var(--color-ink-2);
+  --color-oroTxt: var(--color-ink-3);
+  --color-oroSuave: var(--color-line);
+
+  /* Superficies */
+  --color-crema: var(--color-bg);
+  --color-crema2: var(--color-surface-2);
+  --color-blanco: var(--color-surface);
+  --color-texto-inverso: var(--color-inv-ink);
+
+  /* Texto */
+  --color-tinta: var(--color-ink);
+  --color-gris: var(--color-ink-2);
+
+  /* Líneas y controles */
+  --color-linea: var(--color-line);
+  --color-lineaV: var(--color-inv-line);
+  --color-bordeInput: var(--color-line-2);
+  --color-filaHover: var(--color-surface-2);
+  --color-cancelBg: var(--color-surface-3);
+  --color-cancelTxt: var(--color-ink-2);
+  --color-overlay: var(--color-scrim);
+
+  /* Banner de apertura y controles nativos */
+  --color-apertura-bg: var(--color-warn-bg);
+  --color-apertura-txt: var(--color-warn-txt);
+  --color-apertura-icon: var(--color-warn);
+  --color-select-option-bg: var(--color-surface);
+  --color-select-option-txt: var(--color-ink);
+
+  /* Semáforo con los nombres antiguos */
+  --color-okBg: var(--color-ok-bg);
+  --color-warnBg: var(--color-warn-bg);
+  --color-critBg: var(--color-crit-bg);
+  --color-crit-fondo: var(--color-crit);
+}
+
+:root:not(.dark) {
+  --color-oro-alpha55: rgba(13, 13, 13, 0.18);
+  --color-ok-alpha33: rgba(47, 110, 81, 0.2);
+  --color-crit-alpha33: rgba(164, 59, 54, 0.2);
+}
+
+:root.dark {
+  --color-oro-alpha55: rgba(244, 244, 241, 0.2);
+  --color-ok-alpha33: rgba(126, 185, 155, 0.2);
+  --color-crit-alpha33: rgba(206, 128, 120, 0.2);
+}
+
+/* ------------------------------------------------------------
+   5 · Animaciones del sistema
+   ------------------------------------------------------------ */
+@keyframes rnsrShimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+@keyframes rnsrPulso {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes rnsrGiro {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes rnsrEntrada {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ------------------------------------------------------------
+   6 · Base tipográfica y foco
+   ------------------------------------------------------------ */
+body {
+  font-family: var(--fuente);
+  letter-spacing: -0.005em;
+  background: var(--color-bg);
+  color: var(--color-ink);
+}
+
+/* Anillo de 2px en tinta, separado 2px. */
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+}
+
+/* Cifras que no bailan al actualizarse en vivo. */
+.rnsr-cifras {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Fila de tabla con hover suave. */
+.rnsr-row:hover {
+  background: var(--color-surface-2) !important;
+}
