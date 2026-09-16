@@ -30,6 +30,19 @@
 import { urlDelBackend } from "./backend.js";
 
 /** Lo que el backend sabe de una empresa. Ninguno de los cuatro puede faltar. */
+/**
+ * De que empresa es esta pestaña.
+ *
+ * ⚠️ Vive aqui y no en `App.jsx` porque desde la fase 7 la necesitan DOS sitios
+ * —el armazon del cliente y el enlace que se copia en Ajustes—, y una constante
+ * escrita dos veces es una segunda verdad: el dia que discrepen, el enlace que
+ * se manda por WhatsApp apunta a una empresa distinta de la que esta abierta y
+ * nadie sabe cual manda.
+ *
+ * En produccion saldra del subdominio o del acceso. Hoy se fija en el `.env`.
+ */
+export const EMPRESA = (import.meta?.env?.VITE_EMPRESA ?? "acme").trim();
+
 export class NoSeSabeDondeVive extends Error {
   constructor(clave, motivo) {
     super(

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* ============================================================================
-   Comprobación del núcleo de v2 · CONTRA EL BACKEND DE VERDAD
+   El núcleo · contra el backend de verdad
    ----------------------------------------------------------------------------
    Este repositorio no tiene runner de pruebas unitarias: tiene Playwright para
    el extremo a extremo y guiones de Node para lo demás (revisar-props,
@@ -35,30 +35,21 @@
    corriera.
    ========================================================================= */
 
-globalThis.VITE_BACKEND_URL = process.env.BACKEND ?? "http://localhost:8090";
+import { BACKEND, vista, exigir } from "../comprobar/arnes.mjs";
+
+globalThis.VITE_BACKEND_URL = BACKEND;
 
 const { resolverInstancia, NoSeSabeDondeVive } = await import("./instancia.js");
-const { pedirAlBackend, ErrorDelBackend, urlDelBackend } = await import("./backend.js");
+const { pedirAlBackend, ErrorDelBackend } = await import("./backend.js");
 const { queEnsenar, quienFirma, QUE_ENSENAR } = await import("./sesion.js");
-
-let fallos = 0;
-const casos = [];
-
-function caso(nombre, fn) {
-  casos.push([nombre, fn]);
-}
-
-function exigir(condicion, queSeEsperaba) {
-  if (!condicion) {
-    throw new Error(queSeEsperaba);
-  }
-}
 
 /** Un JWT de mentira. Solo se decodifica: aquí nadie verifica ninguna firma. */
 function tokenCon(reclamaciones) {
   const b64 = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
   return `${b64({ alg: "none" })}.${b64(reclamaciones)}.firma-que-nadie-mira`;
 }
+
+vista("Núcleo · el cimiento que comparten todas las vistas", (caso) => {
 
 // ---- A · dónde vive una empresa -------------------------------------------
 
@@ -179,25 +170,4 @@ caso("C4 · ⚠️ Un `sub` que no es identificador devuelve nulo, no un invento
   exigir(quienFirma(tokenCon({ sub: bueno })) === bueno, "y el bueno pasa entero");
 });
 
-// ---- correr ----------------------------------------------------------------
-
-console.log(`\n  Núcleo v2 contra ${urlDelBackend()}\n`);
-try {
-  await fetch(`${urlDelBackend()}/actuator/health`);
-} catch {
-  console.error(`  ✘ El backend no contesta en ${urlDelBackend()}.\n` +
-    `    Levántalo antes: ./mvnw spring-boot:run -Dspring-boot.run.profiles=local\n`);
-  process.exit(2);
-}
-
-for (const [nombre, fn] of casos) {
-  try {
-    await fn();
-    console.log(`  ✔ ${nombre}`);
-  } catch (e) {
-    fallos++;
-    console.log(`  ✘ ${nombre}\n      ${e.message}`);
-  }
-}
-console.log(`\n  ${casos.length - fallos} de ${casos.length}${fallos ? ` · ${fallos} FALLOS` : ""}\n`);
-process.exit(fallos ? 1 : 0);
+});
