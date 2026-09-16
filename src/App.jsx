@@ -9,6 +9,9 @@ import Programa from "./vistas/Programa.jsx";
 import Motor from "./vistas/Motor.jsx";
 import Ajustes from "./vistas/Ajustes.jsx";
 import EnlacePublico from "./vistas/EnlacePublico.jsx";
+import Consola from "./vistas/consola/Consola.jsx";
+import { queEnsenar, QUE_ENSENAR } from "./nucleo/sesion.js";
+import { tokenDeAhora } from "./nucleo/sesionLocal.js";
 
 /* ============================================================================
    El armazón · router incluido desde la segunda pantalla, como estaba dicho.
@@ -40,9 +43,64 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/e/:empresa/:token" element={<EnlacePublico />} />
-        <Route path="*" element={<Cliente />} />
+        <Route path="*" element={<Aplicacion />} />
       </Routes>
     </BrowserRouter>
+  );
+}
+
+/**
+ * Cuál de las dos aplicaciones abre quien acaba de entrar.
+ *
+ * ⚠️ ESTO NO DECIDE QUE SE PUEDE HACER, SOLO QUE SE PINTA.
+ *
+ * `queEnsenar` lee la reclamacion `equipo` del token SIN verificar la firma, y
+ * eso es correcto unicamente para esto. Quien manda es el backend: `/control`
+ * exige la autoridad EQUIPO_RENASER y la rechaza si no esta, mire lo que mire
+ * esta funcion. Si alguien edita su token en el navegador, vera la navegacion
+ * de la consola y cada peticion le contestara 401 o 403.
+ *
+ * O sea: esto ahorra un menu inutil, no protege nada.
+ *
+ * `sesion.js` se escribio en la fase 0 con sus cuatro casos, y hasta la fase 6
+ * no lo usaba nadie. Es exactamente para lo que existia.
+ */
+function Aplicacion() {
+  const [queVa, setQueVa] = useState(null);
+  const [fallo, setFallo] = useState(null);
+
+  useEffect(() => {
+    tokenDeAhora()
+      .then((token) => setQueVa(queEnsenar(token)))
+      .catch((e) => { setFallo(e); setQueVa(QUE_ENSENAR.nada); });
+  }, []);
+
+  if (queVa === null) {
+    return <Entretanto>Entrando…</Entretanto>;
+  }
+  if (queVa === QUE_ENSENAR.consola) {
+    return <Consola />;
+  }
+  if (queVa === QUE_ENSENAR.cliente) {
+    return <Cliente />;
+  }
+  /* ⚠️ Sin sesion NO se pinta la del cliente «por si acaso»: un menu de cliente
+     sin sesion es una promesa que cada pulsacion incumple. */
+  return (
+    <Entretanto>
+      <strong style={{ display: "block", marginBottom: 6 }}>No hay sesión</strong>
+      {fallo?.message ?? "El token no dice de quién es esta pantalla."}
+    </Entretanto>
+  );
+}
+
+function Entretanto({ children }) {
+  return (
+    <div style={{
+      minHeight: "100dvh", display: "grid", placeContent: "center",
+      padding: "var(--esp-5)", textAlign: "center",
+      color: "var(--color-ink-2)", lineHeight: 1.55, maxWidth: "46ch", margin: "0 auto",
+    }}>{children}</div>
   );
 }
 

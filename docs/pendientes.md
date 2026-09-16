@@ -32,10 +32,10 @@ npm run comprobar  todas las vistas contra el backend de verdad
 | 3 | **Programas** | Donde el diseño puede mentir: lo declarado y lo cobrado viajan juntos y no se pueden fundir | 2,5 j | ✅ |
 | 4 | **Motor de IA** | Operaciones lentas que **cuestan dinero**. Necesitan progreso de verdad y la corrida en seco a la vista | 2,5 j | ✅ |
 | 5 | **Ajustes y equipo** | Conexión con Meta y emitir/revocar enlaces | 1 j | ✅ |
-| 6 | **Consola interna** | Aplicación aparte, con `EQUIPO_RENASER`. No comparte navegación con la del cliente | 2 j | |
+| 6 | **Consola interna** | Aplicación aparte, con `EQUIPO_RENASER`. No comparte navegación con la del cliente | 2 j | ✅ |
 | 7 | **Enlace público** | Pantalla sin login. Las cinco formas de fallar contestan lo mismo **a propósito** | 0,5 j | ✅ |
 
-**Quedan 2 jornadas**: solo la fase 6, la consola interna.
+**Las ocho fases están hechas.** Las 11 pantallas cubren los 50 endpoints del backend.
 
 ⚠️ **Eso no es el producto entero.** El panel anterior tiene 41 vistas sobre 106 tablas; el backend
 sirve 10. Todo lo que no esté en esa lista necesita endpoints nuevos **antes** que diseño.
@@ -273,6 +273,118 @@ cable. **Lo cazó `npm run comprobar`**, que es exactamente para lo que existe.
 
 Corregido en el backend: excepción propia `EseEnlaceNoExiste` con su manejador y un 404, más dos
 casos por HTTP. Backend en 413 pruebas.
+
+---
+
+## Fase 6 · hecha · Consola interna
+
+La aplicación de RENASER: ve a **todos** los clientes y puede suspenderlos. 11 endpoints.
+
+### La decisión de dónde vive ya estaba tomada, y no hoy
+
+`nucleo/sesion.js` es de la **fase 0**: devuelve `consola | cliente | nada` leyendo la reclamación
+`equipo` del token, con sus cuatro casos probados. Llevaba ahí desde el primer día **sin que lo
+usara nadie**. La fase 6 es exactamente para lo que se escribió, y el acuñador de Vite ya sabía
+emitir el token de equipo (`?equipo=1`) desde entonces.
+
+Así que no hubo que decidir nada: misma aplicación, raíz propia, elegida por el token.
+
+### ⚠️ Las dos aplicaciones no comparten ni un píxel de cabecera
+
+Desde aquí se suspende y se cierra a clientes de verdad. Que se parecieran sería el peor error
+posible de esta fase: alguien que crea estar en la suya acabaría suspendiendo a otro.
+
+La cabecera es la contraria —fondo oscuro donde la del cliente lleva el oro— y lleva escrito
+*«Estás viendo a todos los clientes»*. Ese aviso no es decoración: es lo único que distingue las dos
+pantallas de un vistazo.
+
+### Las reglas del backend que decidieron la forma
+
+| | |
+|---|---|
+| **La salud NUNCA sin su fecha** | *«Un “al día” sin cuándo miente en cuanto pasa una hora»*. Por eso es un componente y no dos columnas: para pintarla hay que pasar por ahí, y ahí van juntas |
+| ⚠️ **`estado` y `enrutandoAhora`, lado a lado** | Hermano de D11. *«Lo que dice el plano de control y lo que hace el enrutador AHORA son dos cosas, y pueden diferir. Se enseñan las dos: que difieran es el dato»*. Un semáforo único tendría que elegir a cuál creer, justo el día en que alguien necesita mirar |
+| **La ficha no lleva credenciales** | *«Una pantalla que las enseña acaba con una de ellas pegada en un chat»*. Hay un caso que lo vigila por nombre |
+| **Cerrar pide escribir la clave** | `cerrada` es terminal. Un botón que no se deshace no puede estar a una pulsación. No es una casilla de «entiendo»: se teclea `acme` |
+| **Motivo mínimo de 10** | *«Una suspensión sin motivo es indistinguible de un error»*. La pantalla lo adelanta con cuenta atrás; el que manda sigue siendo el 400 del servidor |
+| **Vacío no es error** | Cero clientes es el estado normal de una instalación nueva: la consola existe para dar de alta al primero |
+| **Los planes no se borran ni se renombran** | Tienen empresas colgando. Se dice en la pantalla, para que no se lea como algo a medio hacer |
+
+### La copia de la regla duró unas horas · 16-sep
+
+Al montar la pantalla no había endpoint que dijera qué transiciones admite una empresa, así que la
+tabla de `Empresa.java` se copió en `datos/consola.js` marcada como lo que era. **Ya no existe.**
+
+⚠️ Y el arreglo no fue añadir un endpoint que recitara la tabla — eso habría sido una segunda copia,
+peor que la primera porque parece autoridad. La regla estaba escrita **tres veces dentro del propio
+`Empresa.java`**, una por método, en las llamadas a `exigirEstado`. Bastaba mientras solo sirviera
+para **impedir**; dejó de bastar cuando hubo que **enseñar**.
+
+Así que primero se unificó en un enum `Transicion`, que es ahora el único sitio donde vive. `Empresa`
+lo usa para impedir y la ficha para contar: **las dos leen lo mismo**, así que no pueden discrepar.
+
+La ficha trae ahora las tres con `cabe` y con `desde`:
+
+```json
+{"cual":"reactivacion","cabe":false,"desde":["provisionando","suspendida"]}
+```
+
+| Decisión | Por qué |
+|---|---|
+| **Viaja dentro de la ficha, no en un endpoint suyo** | Por lo mismo que la salud no se dice sin su fecha: el estado y lo que permite son la misma información partida en dos. Una pantalla que tuviera que pedirlas aparte las adivinaría mientras llega la respuesta |
+| **Van las TRES, no solo las que caben** | Con solo las posibles, la pantalla tendría que inventarse qué decir de las que faltan — y lo que se inventaría es la copia otra vez |
+| **`desde` viaja incluso cuando `cabe` es cierto** | Es lo único con lo que la pantalla explica un «no se puede» sin tener la regla. Y es **la misma lista que sale en el mensaje del 409**: lo que se explica al mirar y lo que se contesta al fallar dicen lo mismo |
+| **«Es definitivo» se deduce** | De que ninguna quepa. En el front no hay ningún sitio donde ponga que `cerrada` es terminal: se ve |
+| **El nombre ES el segmento de la URL** | `suspension` → `POST /control/empresas/{clave}/suspension`. Hay un caso que lo vigila, para que renombrar una constante sin tocar su ruta no se descubra el día que alguien intente suspender a un cliente |
+
+Lo único que queda escrito en la pantalla es **cómo se cuenta** cada una —su rótulo, su aviso, y
+cuál se pinta como peligrosa—. Eso no es una regla de negocio y el backend no tiene opinión.
+
+**Contraprobado en los dos repositorios.** En el backend, haciendo que `puede()` devolviera siempre
+`true`: cayeron dos casos —*«la ficha anuncia que reactivacion cabe»*— y además saltó la restricción
+`empresa_baja_con_su_fecha` de la base, o sea que la red también lo caza. Y renombrando la ruta sin
+tocar el enum: *«POST /control/empresas/acme/suspension no existe: el enum y la ruta se
+desincronizaron»*. En el front, quitando la deducción de «definitivo» y quitando el uso de `desde`.
+
+**421 pruebas en el backend, 66 de 66 en el front.**
+
+### El identificador que no se puede buscar, otra vez — y esta vez no se puede arreglar
+
+Dar acceso al primer administrador pide el id de una cuenta, pegado a mano. Es el mismo agujero que
+tenía emitir un enlace antes de la fase 5, pero **no se puede cerrar igual**: ese id es del proveedor
+de identidad, y cuál va a ser está sin decidir. La pantalla lo dice en vez de dejar un campo desnudo
+que hace pensar que uno debería saber qué poner.
+
+### ⚠️⚠️ Y un fallo del ARNÉS que llevaba siete fases escondido
+
+Al añadir la fase 6 la suite pasó de 50 de 50 a **31 de 64, con 33 fallos en fases que nadie había
+tocado**. Todos decían lo mismo: *«petición sin empresa resuelta»*.
+
+La causa: `fijarProveedorDeToken` es estado global **escrito al cargar el módulo y leído al correr
+los casos**. Los ocho módulos cargan antes de que corra ningún caso, así que mandaba el último que
+escribiera. Funcionó siete fases por casualidad —los siete ponían el mismo tipo de token—. La
+consola fue la primera en pedir uno distinto, de equipo y sin empresa, y dejó a las otras siete
+hablando con el suyo.
+
+⚠️ Lo peligroso no es que fallara: es que **pudo no fallar**. Con otro orden de carga habría salido
+todo verde con las fases corriendo con la identidad equivocada.
+
+Arreglado en el arnés, no en el fichero: **la identidad es ahora parte de la declaración de la
+vista** (`vista(nombre, declarar, { comoQuien })`) y se vuelve a fijar **antes de cada caso**. Un
+fichero no puede pisar a otro aunque quiera. Contraprobado: quitando esa línea, 40 fallos.
+
+### Lo que NO se comprueba automáticamente, y por qué
+
+**El alta de una empresa.** El perfil `local` del backend lleva un mapa fijo de puertos —`renaser:
+5441`, `acme: 5442`—, así que no se puede inventar una empresa; y dar de alta no se deshace, porque
+`cerrada` es terminal. Se probó a mano.
+
+Lo que sí se comprueba de las transiciones se hace sobre `acme` y **se restaura en un `finally`**.
+Contraprobado haciendo fallar el caso a mitad: cayó, y `acme` volvió a `activa`.
+
+⚠️ Coste conocido: cada vuelta de la suite deja un par suspensión/reactivación en la historia de
+`acme`, con su motivo diciendo que es automático. No se puede evitar —no se suspende sin escribir
+historia, y eso es el backend funcionando bien—, pero conviene saberlo al leer esa historia.
 
 ---
 

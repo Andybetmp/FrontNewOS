@@ -11,9 +11,6 @@ import { BACKEND, vista, exigir, tokenLocal } from "../comprobar/arnes.mjs";
 
 globalThis.VITE_BACKEND_URL = BACKEND;
 
-const { fijarProveedorDeToken } = await import("../nucleo/sesionLocal.js");
-fijarProveedorDeToken(() => tokenLocal());
-
 const { lugares, proveedores, CAMPOS_LUGAR, CAMPOS_PROVEEDOR } = await import("./logistica.js");
 const { ErrorDelBackend } = await import("../nucleo/backend.js");
 

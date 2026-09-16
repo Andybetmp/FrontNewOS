@@ -8,6 +8,7 @@
 
 import { createHmac } from "node:crypto";
 import { readFileSync } from "node:fs";
+import { fijarProveedorDeToken } from "../nucleo/sesionLocal.js";
 
 /** El backend de verdad. En Node se le habla directo: no hay CORS que valga. */
 export const BACKEND = process.env.BACKEND ?? "http://localhost:8090";
@@ -53,11 +54,28 @@ export function tokenLocal({ sub = "11111111-1111-1111-1111-111111111111", equip
 
 const grupos = [];
 
-/** Declara el bloque de una vista. El nombre sale en el informe. */
-export function vista(nombre, declarar) {
+/**
+ * Declara el bloque de una vista.
+ *
+ * ⚠️ `comoQuien` DICE CON QUE IDENTIDAD CORRE ESTE BLOQUE, Y NO ES DECORACION
+ * ---------------------------------------------------------------------------
+ * Hasta la fase 6 cada fichero llamaba a `fijarProveedorDeToken` al cargarse, y
+ * funcionaba por casualidad: los siete ponian el mismo tipo de token.
+ *
+ * Pero eso es estado global ESCRITO AL CARGAR y LEIDO AL CORRER, y los modulos
+ * cargan todos antes de que corra ningun caso. O sea que mandaba el ultimo que
+ * escribiera. La consola fue la primera en pedir un token distinto —de equipo,
+ * sin empresa— y dejo a las otras siete hablando con el suyo: 33 fallos en
+ * fases que nadie habia tocado, todos con «peticion sin empresa resuelta».
+ *
+ * Ahora la identidad es parte de la DECLARACION del bloque y se vuelve a fijar
+ * antes de cada caso. Un fichero no puede pisar a otro aunque quiera, y quien
+ * lea cualquiera de ellos ve con quien entra sin tener que adivinarlo.
+ */
+export function vista(nombre, declarar, { comoQuien = () => tokenLocal() } = {}) {
   const casos = [];
   declarar((titulo, fn) => casos.push([titulo, fn]));
-  grupos.push([nombre, casos]);
+  grupos.push([nombre, casos, comoQuien]);
 }
 
 export function exigir(condicion, queSeEsperaba) {
@@ -85,10 +103,14 @@ export async function correr() {
     process.exit(2);
   }
 
-  for (const [nombre, casos] of grupos) {
+  for (const [nombre, casos, comoQuien] of grupos) {
     console.log(`\n  ${nombre}`);
     for (const [titulo, fn] of casos) {
       total++;
+      /* Antes de CADA caso, no una vez por bloque: un caso que cambie de
+         identidad a proposito —el que comprueba que un inquilino no entra en
+         /control— no puede dejar al siguiente hablando con su token. */
+      fijarProveedorDeToken(comoQuien);
       try {
         await fn();
         console.log(`    ✔ ${titulo}`);

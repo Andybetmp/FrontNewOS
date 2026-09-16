@@ -15,6 +15,43 @@
 let enMemoria = null;
 let proveedor = null;
 
+/* ---------------------------------------------------------------------------
+   ⚠️ CON QUÉ SESIÓN SE ENTRA · andamio, y del más provisional de todos
+   ---------------------------------------------------------------------------
+   En producción hay UN token y ya trae dentro quién eres: si lleva la
+   reclamación `equipo: "renaser"`, `queEnsenar` pinta la consola; si no, la
+   aplicación del cliente. Nadie elige nada — lo eligió el acceso.
+
+   Aquí no hay acceso, así que hace falta decir a quién se está simulando. Esto
+   NO decide qué se puede hacer: decide qué token pide el andamio, que es
+   exactamente lo que en producción decide el formulario de acceso. Todo lo de
+   después es el camino de verdad.
+
+       ?sesion=equipo    entra como el equipo de RENASER
+       ?sesion=cliente   entra como la empresa del .env
+
+   Se recuerda en la pestaña, no en el navegador: dos pestañas pueden estar en
+   dos aplicaciones distintas, que es justo lo que hace falta para compararlas.
+   ------------------------------------------------------------------------ */
+
+const CAJON = "renaser.sesionDeDesarrollo";
+
+function cualSePide() {
+  try {
+    const dicha = new URL(globalThis.location?.href ?? "http://local")
+      .searchParams.get("sesion");
+    if (dicha === "equipo" || dicha === "cliente") {
+      globalThis.sessionStorage?.setItem(CAJON, dicha);
+      return dicha;
+    }
+    return globalThis.sessionStorage?.getItem(CAJON) ?? "cliente";
+  } catch {
+    /* Modo privado, o sin `location`. Se cae del lado del cliente, que es el
+       que no ve a todo el mundo. */
+    return "cliente";
+  }
+}
+
 /**
  * ⚠️ SOLO PARA `npm run comprobar`, Y POR UN MOTIVO CONCRETO.
  *
@@ -38,17 +75,23 @@ export async function tokenDeAhora() {
   if (proveedor) {
     return proveedor();
   }
-  if (enMemoria && enMemoria.expira > Date.now() + 30_000) {
+  const cual = cualSePide();
+  /* ⚠️ La memoria se guarda CON su clase. Sin esto, cambiar de sesión en una
+     pestaña seguiría hablando con el token anterior hasta que caducara — y lo
+     que se vería es la consola pidiendo datos con el token de un inquilino. */
+  if (enMemoria && enMemoria.cual === cual && enMemoria.expira > Date.now() + 30_000) {
     return enMemoria.token;
   }
   const empresa = (import.meta.env.VITE_EMPRESA ?? "acme").trim();
-  const r = await fetch(`/dev/sesion?empresa=${encodeURIComponent(empresa)}`);
+  const r = await fetch(cual === "equipo"
+    ? "/dev/sesion?equipo=1"
+    : `/dev/sesion?empresa=${encodeURIComponent(empresa)}`);
   const dicho = await r.json();
   if (!r.ok || !dicho.token) {
     throw new SinSesionDeDesarrollo(
       dicho.error ?? "El servidor de desarrollo no acuñó ningún token."
     );
   }
-  enMemoria = { token: dicho.token, expira: dicho.cuerpo.exp * 1000 };
+  enMemoria = { token: dicho.token, expira: dicho.cuerpo.exp * 1000, cual };
   return dicho.token;
 }

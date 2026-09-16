@@ -16,6 +16,7 @@ import "./datos/programas.comprobar.mjs";
 import "./datos/motor.comprobar.mjs";
 import "./datos/ajustes.comprobar.mjs";
 import "./datos/enlacePublico.comprobar.mjs";
+import "./datos/consola.comprobar.mjs";
 
 const { correr } = await import("./comprobar/arnes.mjs");
 process.exit((await correr()) ? 1 : 0);
