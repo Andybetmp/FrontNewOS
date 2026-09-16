@@ -13,9 +13,6 @@ import { BACKEND, EMPRESA, vista, exigir, tokenLocal } from "../comprobar/arnes.
 
 globalThis.VITE_BACKEND_URL = BACKEND;
 
-const { fijarProveedorDeToken } = await import("../nucleo/sesionLocal.js");
-fijarProveedorDeToken(() => tokenLocal());
-
 const { enlaces, colaboradores } = await import("./ajustes.js");
 const { abrir, responder, enlaceDe, cuerpoDeRespuesta } = await import("./enlacePublico.js");
 const { ErrorDelBackend } = await import("../nucleo/backend.js");
