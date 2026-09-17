@@ -209,12 +209,42 @@ vez menos gente hasta que nadie. Se comprueba lo que se puede sin pagar: que las
 `seco`, que el 409 llega explicado, y que gastar es explícito. Lo que hay detrás de la llamada ya lo
 prueban las 411 del backend, con servidores de mentira.
 
-### Lo que NO se pudo ver
+### El estado «corriendo» · VISTO el 16-sep, y no estaba solo
 
-⚠️ **El estado «corriendo» —el cronómetro— no se vio renderizado.** Para provocarlo hace falta o
-gastar dinero de verdad, o reconfigurar el backend apuntando a un proveedor falso y lento, con sus
-precondiciones (material, hallazgos, sobre de presupuesto). Queda anotado como pendiente de mirar,
-no como comprobado.
+Esta fase se entregó con una línea en su acta: *«el estado corriendo no se vio renderizado»*. Era
+cierto y era deuda. Se montó `scripts/proveedor-de-mentira.mjs` en el backend —un proveedor de IA
+falso y lento, con el retardo en un fichero— y se vieron **los tres estados**, sin gastar un
+céntimo:
+
+| A los | Lo que se leyó en pantalla |
+|---|---|
+| **0:04** | `0:04` · *«Suele tardar alrededor de 30 s. No cierres la pestaña»* · *«Corriendo de verdad. Esto está pagando»* |
+| **0:40** | *«Está tardando más de lo normal. Sigue corriendo: no se cancela sola ni se reintenta»* — la rama que cruza el umbral |
+| **al acabar** | El cronómetro se limpia solo y sale el resumen: 1 hallazgo leído, 1 frente, 0 huérfanos |
+
+Y con él se verificó **otra regla que tampoco se había visto nunca**. El modelo falso no está en la
+tabla de tarifas, así que el coste no se pudo calcular — y la pantalla no pintó `S/ 0,00`:
+
+> *«No se pudo calcular cuánto costó. La llamada se pagó igual: lo que falta es la tarifa de ese
+> modelo.»*
+
+Es la misma regla que el nulo de D11, en otro sitio: donde no se sabe, se dice.
+
+### ⚠️ Y el hallazgo que más vale de todo esto: la corrida en seco NO prueba el freno
+
+`planificar` tiene **tres** precondiciones, no una, y ninguna estaba escrita:
+
+- al menos un `hallazgo` con evidencia (y el `pilar` es uno de cinco valores),
+- alguien en `colaboradores` a quien anclar el responsable,
+- **la fila 1 de `interruptor_motor` con `activo = true`**.
+
+La tercera apareció sola: la corrida **en seco contestó 200**, y la de verdad, un 409 diciendo *«El
+motor está detenido»*. O sea que el ensayo en seco —que existe precisamente para enseñar qué va a
+pasar antes de pagar— **no comprueba el interruptor**. Quien confíe en él para saber si la operación
+va a poder correr, se lleva la sorpresa en el segundo botón, que es el que cobra.
+
+Queda apuntado abajo: no se ha tocado, porque cambiarlo es una decisión sobre qué promete el ensayo
+en seco, no un arreglo.
 
 ---
 
@@ -377,7 +407,27 @@ fichero no puede pisar a otro aunque quiera. Contraprobado: quitando esa línea,
 
 **El alta de una empresa.** El perfil `local` del backend lleva un mapa fijo de puertos —`renaser:
 5441`, `acme: 5442`—, así que no se puede inventar una empresa; y dar de alta no se deshace, porque
-`cerrada` es terminal. Se probó a mano.
+`cerrada` es terminal.
+
+### ⚠️ Y aquí había una frase que no estaba ganada · corregido el 17-sep
+
+Esto decía «se probó a mano», y era **falso**. Solo existía `acme`, creada el 11 de septiembre por
+el barrido de endpoints del backend — **nunca por el formulario de la consola**. La frase se escribió
+dando por hecho lo que no se había hecho, que es exactamente lo que esta casa no admite.
+
+Se probó de verdad el 17, usando el hueco `renaser` (puerto 5441, configurado y sin dar de alta),
+y se midió lo que quedó:
+
+| | |
+|---|---|
+| Tablas en la base nueva | **108** |
+| Vistas · políticas | **28** · **300** |
+| ⚠️ Permisos a `anon` | **0** — el arreglo de BD-1 se sostiene en una empresa recién creada |
+| Historia anotada | `alta` y `aprovisionamiento` |
+
+Y la fila nueva enseñó una rama del componente `Salud` que tampoco se había visto: una empresa a la
+que nadie ha mirado todavía sale con salud `desconocida` y **«sin fecha de comprobación»** en ámbar,
+en vez de fingir un verde.
 
 Lo que sí se comprueba de las transiciones se hace sobre `acme` y **se restaura en un `finally`**.
 Contraprobado haciendo fallar el caso a mitad: cayó, y `acme` volvió a `activa`.
@@ -467,6 +517,54 @@ discrepen el enlace apunta a una empresa distinta de la que está abierta.
 
 ---
 
+### Un plan ya se puede borrar, si no cuelga nadie de él · 17-sep
+
+Hasta hoy un plan **no se podía borrar nunca**. El backend lo justificaba con «tiene empresas
+colgando», y eso es cierto de los que las tienen. Dejaba sin resolver el otro caso: un plan con
+**cero** empresas es un error de tecleo —y la clave tampoco se puede cambiar— que se quedaba en el
+desplegable del alta **para siempre**.
+
+Se vio con **21 planes de prueba** que no había forma de retirar. Con dos clientes ya molesta; con
+veinte, el alta sería un desplegable de escombros.
+
+`DELETE /control/planes/{clave}` · 204 si no cuelga nadie, **409 diciendo cuántas** si sí.
+
+| Decisión | Por qué |
+|---|---|
+| **El 409 dice el número** | *«El plan 'piloto' lo tienen contratado 2 empresas»*. Un «no se puede borrar» manda a averiguarlo a mano; la cifra se decide sin abrir nada |
+| **Es 409 y no 400** | El cuerpo estaba bien y el plan existe. Lo que no deja borrarlo es el ESTADO del mundo, que es lo que significa 409 en esta casa |
+| **Borrar lo que no existe da 404** | Un 204 diría «hecho» a quien se equivocó de clave. Mismo fallo que el de los enlaces de equipo el 15-sep |
+| **El botón se ofrece siempre** | La ficha de un plan no dice cuántas empresas lo tienen, y pedir ese recuento solo para pintar o no un botón sería pedirle al backend un dato para una decisión de la pantalla. Se pide, y si no cabe llega el 409 explicado — más útil que un botón gris |
+| **Renombrar sigue sin existir** | Eso sí es a propósito: cambiar la clave dejaría a las empresas apuntando a otra cosa sin que nadie lo pidiera |
+
+**Contraprobado en los dos sentidos.** Quitando la red, el borrado pasa y el fallo lo da la **clave
+ajena de la base** (`empresa_plan_id_fkey`): las dos puertas, la que explica y la que impide.
+Haciéndolo callar ante un plan inexistente, cae el caso del 404 con
+*«expected:<404> but was:<204>»*.
+
+### ⚠️ Y la comprobación ya no deja basura
+
+El caso que crea un plan **lo borra en un `finally`**, aunque falle a mitad. Medido: un plan antes de
+la suite, **el mismo después**. La basura que motivó este endpoint es justo lo que este endpoint
+permite dejar de generar.
+
+---
+
+### Dos defectos que salió a la luz al probar el alta
+
+**El selector de planes no enseñaba la clave.** Se vio con veinte planes llamados «Plan de
+comprobacion» en el desplegable, indistinguibles entre sí. No es culpa de la basura de pruebas: un
+plan se identifica por su **clave** —la que queda apuntada en la empresa y no se puede cambiar
+después— y dos planes pueden llamarse igual perfectamente. Sin la clave a la vista, elegir entre dos
+homónimos es adivinar. La tabla de Planes sí la enseñaba; el selector, no.
+
+**Y la comprobación deja un plan por vuelta.** Es inevitable —un plan no se puede borrar, tiene
+empresas colgando, y el precio de comprobar el alta es un plan de más—. Lo que sí se arregló es que
+esa basura se distinga: ahora se llama `ZZ comprobacion automatica`, dice lo que es y cae al final
+de la lista.
+
+---
+
 ## Decisiones tomadas, para no volver a discutirlas
 
 | | Decisión | Por qué |
@@ -483,6 +581,9 @@ discrepen el enlace apunta a una empresa distinta de la que está abierta.
 - **¿Conviven las vistas nuevas con las 41 viejas, o las reemplazan?** Se aplazó a la fase 3.
 - **¿Cómo se despliega?** Decide si hace falta CORS en el backend o un proxy delante.
 - **A1 del backend** — proyecto por empresa o base por empresa. Esperando a que las vistas digan algo.
+- ⚠️ **¿Qué promete la corrida en seco?** Hoy contesta 200 con el motor apagado, y la de verdad da
+  409. O se hace que el ensayo compruebe también el interruptor —y entonces promete «esto va a
+  correr»— o se dice en la pantalla que no lo comprueba. Lo que no puede quedarse es a medias.
 - ⚠️ **¿Los mensajes del backend llevan tilde?** Medido: de unos 70 sitios que escriben mensajes,
   **solo 2 las llevan**. La convención es no ponerlas, y hasta ahora daba igual — los leía el equipo
   dentro de la aplicación. Desde la fase 7 uno de ellos lo lee un colaborador en su teléfono:
