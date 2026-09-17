@@ -192,18 +192,67 @@ vista("Fase 6 · Consola interna", (caso) => {
     const antes = await planes.listar();
     exigir(Array.isArray(antes), "tiene que ser una lista");
 
-    /* Clave única por vuelta: un plan NO se puede borrar —tiene empresas
-       colgando— así que reutilizar una clave haría que la segunda vuelta
-       comprobara otra cosa distinta que la primera. */
-    const clave = `p${Date.now()}`;
-    const creado = await planes.crear({
-      clave, nombre: "Plan de comprobacion", limitePersonas: 25,
-    });
-    exigir(creado.clave === clave, "devuelve la ficha del plan creado");
-    exigir(creado.limitePersonas === 25, "con su límite");
+    /* Clave única por vuelta: reutilizarla haría que la segunda vuelta
+       comprobara otra cosa distinta que la primera.
 
-    const visto = await planes.ver(clave);
-    exigir(visto.nombre === "Plan de comprobacion", "y se puede leer después");
+       ⚠️ Y SE BORRA AL TERMINAR, en un `finally`. Hasta el 17-09 no se podía
+       —no había endpoint— y la suite dejaba un plan por vuelta: se llegó a 21,
+       y el desplegable del alta era un montón de escombros indistinguibles.
+       Esa basura es lo que motivó el borrado, así que lo menos que puede hacer
+       esta comprobación es no volver a generarla. */
+    const clave = `p${Date.now()}`;
+    try {
+      const creado = await planes.crear({
+        clave, nombre: "ZZ comprobacion automatica", limitePersonas: 25,
+      });
+      exigir(creado.clave === clave, "devuelve la ficha del plan creado");
+      exigir(creado.limitePersonas === 25, "con su límite");
+
+      const visto = await planes.ver(clave);
+      exigir(visto.nombre === "ZZ comprobacion automatica", "y se puede leer después");
+    } finally {
+      /* Aunque el caso falle a mitad: un fallo no es excusa para ensuciar. */
+      await planes.borrar(clave).catch(() => {});
+    }
+  });
+
+  caso("Un plan sin empresas se borra, y deja de listarse", async () => {
+    const clave = `b${Date.now()}`;
+    await planes.crear({ clave, nombre: "ZZ para borrar", limitePersonas: 3 });
+    await planes.borrar(clave);
+
+    const fallo = await loQueContesta(() => planes.ver(clave));
+    exigir(fallo?.estado === 404, `tras borrarlo, 404 · llegó ${fallo?.estado}`);
+    const lista = await planes.listar();
+    exigir(!lista.some((p) => p.clave === clave), "y ya no sale en la lista");
+  });
+
+  caso("⚠️ Un plan CON empresas no se borra, y el 409 dice CUÁNTAS", async () => {
+    /* La empresa que hay cuelga de algún plan: ése es el que no se puede borrar.
+       Se busca en vez de suponer que se llama «piloto». */
+    const e = await unaEmpresa();
+    exigir(e.clave, "hay una empresa con la que probar");
+
+    /* Se prueban todos los planes: el que tenga empresas tiene que dar 409.
+       Si NINGUNO diera 409, este caso no habría comprobado nada — y eso se dice. */
+    let hubo409 = false;
+    for (const p of await planes.listar()) {
+      const fallo = await loQueContesta(() => planes.borrar(p.clave));
+      if (fallo?.estado === 409) {
+        hubo409 = true;
+        exigir(/\d+ empresas?/.test(String(fallo.detalle)),
+          `tiene que decir cuántas lo impiden: «${fallo.detalle}»`);
+        exigir(!fallo.generico, "con la voz de la casa");
+      }
+    }
+    exigir(hubo409, "ningún plan estaba contratado, así que esto no comprobó nada");
+  });
+
+  caso("Borrar un plan que no existe da 404, no un 204 mudo", async () => {
+    const fallo = await loQueContesta(() => planes.borrar("no-existe-este-plan"));
+    /* Un 204 aquí diría «hecho» a quien se equivocó de clave. Es el mismo fallo
+       que se arregló el 15-sep en los enlaces de equipo. */
+    exigir(fallo?.estado === 404, `404, y llegó ${fallo?.estado}`);
   });
 
   caso("⚠️ Un plan con límite CERO se rechaza · nulo es «sin límite»", async () => {

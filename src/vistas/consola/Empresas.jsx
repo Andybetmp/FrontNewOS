@@ -161,9 +161,17 @@ function Alta({ alTerminar, alCancelar }) {
             padding: "9px 12px", fontSize: 14, fontFamily: "inherit",
           }}>
             <option value="">—</option>
+            {/* ⚠️ La CLAVE va delante, y no es un detalle de formato.
+                Un plan se identifica por su clave —es la que queda apuntada en
+                la empresa y la que no se puede cambiar después—, y dos planes
+                pueden llamarse igual perfectamente. Sin la clave a la vista,
+                elegir entre dos homónimos es adivinar.
+
+                Se vio el 17-09 con veinte planes llamados «Plan de
+                comprobacion» en el desplegable, indistinguibles entre sí. */}
             {(disponibles ?? []).map((p) => (
               <option key={p.clave} value={p.clave}>
-                {p.nombre} · {p.limitePersonas == null ? "sin límite" : `${p.limitePersonas} personas`}
+                {p.clave} · {p.nombre} · {p.limitePersonas == null ? "sin límite" : `${p.limitePersonas} personas`}
               </option>
             ))}
           </select>

@@ -87,6 +87,22 @@ export const planes = {
         limitePersonas: datos.limitePersonas ?? null,
       },
     }),
+
+  /**
+   * Borra un plan, y SOLO si no cuelga nadie de él.
+   *
+   * ⚠️ Esto no contradice lo de arriba: un plan CON empresas sigue sin poder
+   * borrarse, y el backend lo rechaza con un 409 que dice **cuántas** son. Lo
+   * que resuelve es el otro caso — un plan con cero empresas es un error de
+   * tecleo, y hasta el 17-09 se quedaba en el desplegable del alta para
+   * siempre, porque la clave tampoco se puede cambiar.
+   *
+   * No devuelve nada: un 204.
+   */
+  borrar: async (clave) =>
+    pedirAlBackend(`/control/planes/${encodeURIComponent(clave)}`, {
+      metodo: "DELETE", token: await tokenDeAhora(),
+    }),
 };
 
 /* ---------------------------------------------------------------------------

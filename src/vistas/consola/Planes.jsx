@@ -11,16 +11,68 @@ import { celda } from "./piezas.jsx";
    empresa exige una clave de plan que exista, **una instalación nueva no podía
    dar de alta a su primer cliente sin que alguien entrara a la base a mano**.
 
-   ⚠️ NO SE BORRAN NI SE RENOMBRAN, Y NO ES QUE FALTE EL BOTÓN
+   ⚠️ NO SE RENOMBRAN, Y SOLO SE BORRA EL QUE NO TIENE A NADIE
    -----------------------------------------------------------
-   Un plan tiene empresas colgando: borrarlo las dejaría apuntando a nada, y
-   cambiarle la clave las dejaría apuntando a otra cosa sin que nadie lo pidiera.
-   Si un plan deja de ofrecerse, se crea el nuevo y se dejan de dar altas con el
-   viejo; las empresas que ya lo tienen siguen con lo que contrataron.
+   Un plan CON empresas no se borra: las dejaría apuntando a nada. Si deja de
+   ofrecerse, se crea el nuevo y se dejan de dar altas con el viejo; quien ya lo
+   tiene sigue con lo que contrató. El backend lo rechaza con un 409 que dice
+   **cuántas** empresas lo impiden, y esa cifra es la que permite decidir sin
+   salir a averiguarla.
 
-   Por eso aquí solo hay listar y crear. Se dice en la pantalla, para que nadie
-   lo lea como una pantalla a medio hacer.
+   ⚠️ Pero uno con CERO empresas sí se borra, desde el 17-09. Antes no había
+   forma, y eso convertía un error de tecleo —la clave tampoco se puede cambiar—
+   en un renglón permanente del desplegable del alta. Se vio con 21 planes de
+   prueba que no se podían retirar.
+
+   Renombrar sigue sin existir, y eso sí es a propósito: cambiar la clave dejaría
+   a las empresas apuntando a otra cosa sin que nadie lo pidiera.
    ========================================================================= */
+
+/**
+ * Borrar un plan · con confirmación, y sin prometer que va a poder.
+ *
+ * ⚠️ El botón se ofrece SIEMPRE, no solo cuando se puede. La ficha de un plan no
+ * dice cuántas empresas lo tienen —y añadir ese recuento solo para pintar o no
+ * un botón sería pedirle al backend un dato para una decisión de la pantalla—.
+ * Así que aquí se pide, y si no se puede, lo que llega es el 409 del servidor
+ * diciendo cuántas lo impiden. Eso es más útil que un botón gris sin explicación.
+ */
+function Borrar({ clave, alBorrar, alFallar }) {
+  const [pidiendo, setPidiendo] = useState(false);
+  const [borrando, setBorrando] = useState(false);
+
+  if (!pidiendo) {
+    return (
+      <Boton variante="fantasma" onClick={() => setPidiendo(true)}
+             style={{ fontSize: 13, padding: "4px 8px" }}>Borrar</Boton>
+    );
+  }
+  return (
+    <span style={{ display: "inline-flex", gap: "var(--esp-2)", alignItems: "center" }}>
+      <span style={{ fontSize: 12, color: "var(--color-ink-3)" }}>¿seguro?</span>
+      <Boton variante="fantasma" onClick={() => setPidiendo(false)}
+             style={{ fontSize: 13, padding: "4px 8px" }}>No</Boton>
+      <Boton disabled={borrando}
+             onClick={async () => {
+               setBorrando(true);
+               alFallar(null);
+               try {
+                 await planes.borrar(clave);
+                 await alBorrar();
+               } catch (e) {
+                 alFallar(e);
+                 setPidiendo(false);
+               } finally {
+                 setBorrando(false);
+               }
+             }}
+             style={{ fontSize: 13, padding: "4px 8px",
+                      borderColor: "var(--color-warn-txt)", color: "var(--color-warn-txt)" }}>
+        {borrando ? "…" : "Sí, borrar"}
+      </Boton>
+    </span>
+  );
+}
 
 export default function Planes() {
   const [filas, setFilas] = useState(null);
@@ -92,7 +144,7 @@ export default function Planes() {
       ) : (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--esp-4)" }}>
           <span style={{ fontSize: 12, color: "var(--color-ink-3)", lineHeight: 1.5, maxWidth: "52ch" }}>
-            Un plan no se borra ni se renombra: hay empresas colgando de su clave.
+            Un plan con empresas no se borra ni se renombra: hay clientes colgando de su clave.
             Si uno deja de ofrecerse, se crea el nuevo y se dejan de dar altas con el viejo.
           </span>
           <Boton variante="primario" onClick={() => setCreando(true)}>Nuevo plan</Boton>
@@ -126,6 +178,7 @@ export default function Planes() {
                       borderBottom: "1px solid var(--color-line)", whiteSpace: "nowrap",
                     }}>{c}</th>
                   ))}
+                  <th style={{ borderBottom: "1px solid var(--color-line)" }} />
                 </tr>
               </thead>
               <tbody>
@@ -139,6 +192,9 @@ export default function Planes() {
                       {p.limitePersonas == null
                         ? <span style={{ color: "var(--color-ink-3)", fontStyle: "italic" }}>sin límite</span>
                         : <span className="cifras">{p.limitePersonas}</span>}
+                    </td>
+                    <td style={{ ...celda, textAlign: "right" }}>
+                      <Borrar clave={p.clave} alBorrar={recargar} alFallar={setError} />
                     </td>
                   </tr>
                 ))}
